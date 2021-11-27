@@ -1,0 +1,73 @@
+	<==== Research Paper Abstract ===> 
+
+Docker is safe if used with default configuration.  It provides isolation between containers and restricts containers' access to the host.
+
+In contrast, widespread usages take advantage of options—given either to the Docker daemon on startup or to the command launching a container—that give containers extended access to the host. When used with untrusted containers, these options trigger many security concerns
+
+Docker container does not isolate the virtual objects via virtualizing hardware or using an independent operating system. Rather, it uses the Namespace mechanism in Linux to promise the secure isolation of running environments and uses the Cgroup mechanism in Linux to realize the management of computer resources. Moreover, it utilizes the kernel capability to reinforce the security
+
+Possible Security Flaws in Docker:
+
+All docker containers share the same network bridge, enabling Address Resolution Protocol (ARP) poisoning attacks between containers on the same host.
+
+Docker's global security can be lowered by options, triggered at container launch, that give extended access on some parts of the host to containers. Additionally, security configuration can be set globally through options passed to the Docker daemon. 
+
+This includes options lowering security, such as the -insecure-registry option, which disables the Transport Layer Security (TLS) certificate check on a particular registry. Options that increase security—such as the -icc=false parameter, which forbids network communications between containers and mitigates the ARP poisoning attack—are available, but they prevent multicontainer applications from operating properly, and hence are rarely used.
+
+The docker-default Apparmor profile9 (https://wikitech.wikimedia.org/wiki/Docker/apparmor), for example, allows full access to the filesystem, network, and all capabilities of Docker containers. Similarly, the default SELinux policy puts all Docker objects in the same domain. Therefore, while default hardening protects the host from containers, it doesn't protect containers from other containers. This security aspect can be addressed by writing specific profiles that depend individually on the containers.
+
+The Docker daemon is remote-controlled through a socket, making it possible to perform any Docker command from another host. By default, the socket used to control the daemon is a Unix socket, located at /var/run/docker.sock and owned by root:docker, but it can be changed to a TCP socket. Access to this socket lets attackers pull and run any container in privileged mode, thereby giving them root access to the host.
+
+Recommended Docker usage:
+
+Docker developers recommend a microservices approach13—that is, a container must host a single service, in a single process or in a daemon spawning children. Therefore, a Docker container isn't considered a VM: there's no package manager, no init process, no sshd to manage it.
+
+All administration tasks (container stop, restart, backups, updates, builds, and so on) must be performed via the host machine, which implies that the legitimate container's admin has root access to the host.
+
+Docker developers also recommend a reproducible and automated deployment of applications. Docker images should be built anywhere through a generic build file (Dockerfile) which specifies the steps to build the image from a base image. This generic way of building images makes the process and the resulting images almost host-agnostic, depending only on the kernel and not on the installed libraries.
+
+Widespread usages include common usages of Docker by application developers and system administrators. Some system administrators or developers use Docker as a way to ship complete virtual environments and update them regularly, turning their containers into VMs. Although this is convenient because it limits system administration tasks to the bare minimum (such as docker pull), as we describe later, it has several security implications. With containers embedding enough software to run a full system (logging daemon, ssh server, and even sometimes an init process), it's tempting to perform administration tasks from within the container, which is completely opposed to Docker's design. Indeed, some of these administration tasks require root access on the container, while other administration actions—such as mounting a volume in a container—could require extra capabilities that Docker drops by default.
+
+
+There are two possible types of adversaries:
+
+1) Direct Adversaries
+2) INdirect Adversaries
+
+Direct:
+
+Direct adversaries can sniff, block, inject, or modify network and system communications, and they directly target the production machines. Locally or remotely, direct adversaries can compromise several system components
+
+1) In-production containers
+2) In-production host operating system
+3) In-production Docker daemons
+4) The production network
+
+Indirect:
+
+Indirect adversaries have the same capabilities as direct ones, but they leverage the Docker ecosystem (such as the code and images repositories) to reach the production environment.
+
+MITRE's Common Vulnerabilities and Exposures (CVE) records illustrate that these are relevant targets. Vulnerabilities found in Docker and the libcontainer mostly concern filesystem isolation: chroot escapes (CVE-2014-9357, CVE-2015-3627), path traversals (CVE-2014-6407, CVE-2014-9356, and CVE-2014-9358), and access to special file systems on the host (CVE-2015-3630). These specific vulnerabilities are all patched as of Docker 1.6.2. Because container processes often run with user ID 0, they have read and write access on the whole host filesystem when they escape, which lets them overwrite host binaries, leading to a delayed arbitrary code execution with root privileges
+
+Vulnerabilities affecting Docker Usages
+
+
+From: https://k21academy.com/docker-kubernetes/docker-image-vulnerabilities/
+
+According to Prevasio, a security startup more than half of the latest images available on DockerHub have critical vulnerabilities. These might be from outdated software, while thousands of images are attack tools or other potentially harmful software. To add on to that according to an analysis of 4 million images published as of 1st of December 2020.
+
+Insecure Local Configuration:
+
+For instance, when given the option -net=host at container launch, Docker doesn't place the container into a separate NET namespace; it therefore gives the container full access to the host's network stack (enabling network sniffing, reconfiguration, and so on). The option -uts=host lets the container in the same UTS namespace as the host, which lets the container see and change the host's name and domain. The option -cap-add=<CAP> gives the container the specified capability, thus making it potentially more harmful to the host. With -cap- add=SYS_ADMIN, a container can, for example, remount /proc and /sys subdirectories in read/write mode and change the host's kernel parameters, leading to potential vulnerabilities, data leakage, or DoS.
+
+Along with these runtime container options, several settings on the host can influence potential attacks. Even basic properties can at a minimum trigger DoS. For instance, when using some storage drivers (aufs), Docker doesn't limit containers' disk usage. A container with a storage volume can fill up this volume and affect other containers on the same host—or even the host itself—if the Docker storage located at /var/lib/docker isn't mounted on a separate partition.
+
+As mentioned earlier, whatever the usages are, containers are an attack vector and therefore represent a potential threat for the host. This is even more relevant in widespread usages, where containers are used as VMs and thus have a bigger attack surface than microservice containers. They also have more vulnerabilities, leading to attacks such as container escapes.
+
+We saw an attack where cryptocurrency-mining malware searched and killed off other existing cryptocurrency miners in infected Linux systems to maximise their own computing power. This attack showcased the malicious actors’ familiarity with Docker and Redis, as the malware featured in this attack looked for exposed application programming interfaces (APIs) in these platforms
+
+The distribution of images through the Docker hub and other registries in the Docker ecosystem is a source of vulnerabilities. Because these vulnerabilities are similar to classical package managers,12 we consider only the automated deployment pipeline perspective here.
+
+https://ieeexplore.ieee.org/document/9064441 - Paper 2
+
+Some exposures existing in the system of host computer can help the processes running in container escape to the host computer system [23], so as to achieve privilege escalation. This is so-called escape attack, which makes container isolation not effective anymore, thus leading to a very serious influence of computer security. For example, process escaped from Docker container can invade the host system and get the privilege of calling open_by_handle_at and then access the file handle structure of mount point

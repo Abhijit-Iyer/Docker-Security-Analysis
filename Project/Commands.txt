@@ -1,0 +1,9 @@
+docker run --cap-add="SYS_ADMIN" -d --volume "E:\Abhijit\MTech\Semester 1\Virtualization and Cloud Computing\Project\Code":/usr/app/src  host_file_write_demonstration sleep infinity
+
+docker run --cap-add="SYS_ADMIN" --volume "E:\Abhijit\MTech\Semester 1\Virtualization and Cloud Computing\Project\Source_Code":/usr/app/src  host_file_write_demonstration
+
+docker exec -it <image_id> sh
+
+docker image rm --force host_file_write_demonstration
+
+docker build . -t host_file_write_demonstration 

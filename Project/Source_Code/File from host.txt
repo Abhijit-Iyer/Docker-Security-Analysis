@@ -1,0 +1,1 @@
+Hi! I am a file present on the host. I will be accessible to the container!
